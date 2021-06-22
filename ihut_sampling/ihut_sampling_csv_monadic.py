@@ -16,7 +16,7 @@ from decipher.beacon import api
 def get_screener_data(survey):
 
     #Creates dataframe with all survey data
-    df = pd.read_csv('{survey}.csv'.format(survey=survey))
+    df = pd.read_csv('~/Desktop/{survey}.csv'.format(survey=survey))
 
     #Pulls out, renames, and combines key columns for balancing
     email = df.loc[:, df.columns.str.contains('email')]
@@ -99,8 +99,8 @@ def sample_file(df_dict,weight,lim,n_size,data):
                           lim=lim)
         sample_list=sample_list.append(respondents)
 
-    duplicates = pd.merge(data, sample_list, how='inner',left_on=['email'], right_on=['email'],left_index=True)
-    available_sample = data.drop(duplicates.index)
+    duplicates = pd.merge(data, sample_list, how='inner',on=['email'])
+    available_sample = data[(~data.email.isin(duplicates.email))]
 
     segments = sample_list.group.unique()
     segments = pd.DataFrame(segments,columns=['segment'])
@@ -165,7 +165,7 @@ def overview(data,sample):
 
     return profile
 
-def export(sample_overview,sample):
+def export(sample_overview,sample,name):
 
     tabs_data: list = []
 
@@ -173,7 +173,7 @@ def export(sample_overview,sample):
     tabs_data.append(sample_overview)
 
 
-    xlname = 'IHUT_Sample_File.xlsx'
+    xlname = '~/Desktop/{name}_Sample_File.xlsx'.format(name=name)
 
     sheet_names = ["Sample Assignment",
                    "Balancing Overview"]
@@ -181,15 +181,16 @@ def export(sample_overview,sample):
     dump_to_excel(xlname, tabs_data, sheet_names=sheet_names)
 
 def main():
-    survey = str(input("What is the name of the csv file with the screener data? (this must be saved in your home directory; do not include .csv in the name)"))
+    survey = str(input("What is the name of the csv file with the screener data? (this must be saved to your desktop; do not include .csv in the name)"))
     lim = int(input("How many sample groups are there? "))
     n_size = int(input("How participants would you like per group? (recommend adding 2-3 more than needed) "))
+    name = str(input("What is the name of this project/product?"))
     data = pd.DataFrame(get_screener_data(survey))
     weight = pd.DataFrame(balancing_criteria(data,n_size,lim))
     df_dict = filtered_data_frames(weight,data)
     sample = sample_file(df_dict,weight,lim,n_size,data)
     sample_overview = overview(data,sample)
-    exporting = export(sample_overview,sample)
+    exporting = export(sample_overview,sample,name)
     print("DONE!!!")
 
 
